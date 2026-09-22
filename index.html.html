@@ -1,0 +1,1421 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplikasi Daftar Nilai Kokurikuler</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts (Inter) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- html2pdf for PDF Generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            800: '#166534',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        @media print {
+            .no-print { display: none !important; }
+            .print-only { display: block !important; }
+        }
+        .print-only { display: none; }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col antialiased">
+
+    <!-- Top Navigation Header -->
+    <header class="bg-indigo-900 text-white shadow-md sticky top-0 z-30 no-print">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="bg-white/10 p-2 rounded-lg text-emerald-400">
+                    <i class="fa-solid fa-graduation-cap text-2xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight">Penilaian Kokurikuler</h1>
+                    <p class="text-xs text-indigo-200" id="headerActivitySub">Penguatan Profil & Lintas Disiplin Ilmu</p>
+                </div>
+            </div>
+
+            <!-- User Auth Bar -->
+            <div id="authContainer" class="flex items-center gap-3">
+                <div id="userInfo" class="hidden items-center gap-2 bg-indigo-800/80 px-3 py-1.5 rounded-full text-xs font-medium border border-indigo-700">
+                    <img id="userAvatar" class="w-6 h-6 rounded-full border border-white/40" src="https://placehold.co/100x100/indigo/white?text=U" alt="User Avatar">
+                    <span id="userName" class="max-w-[120px] truncate">Memuat...</span>
+                    <button id="btnLogout" class="text-indigo-200 hover:text-white ml-1 text-xs" title="Keluar">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                    </button>
+                </div>
+                <button id="btnLogin" class="hidden bg-emerald-500 hover:bg-emerald-600 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold shadow transition flex items-center gap-2">
+                    <i class="fa-brands fa-google"></i> Masuk dengan Google
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Workspace Layout -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-grow w-full">
+
+        <!-- Banner Info Identity Overview -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4 no-print">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+                <div>
+                    <span class="text-slate-400 block uppercase tracking-wider text-[10px] font-semibold">Satuan Pendidikan</span>
+                    <span class="font-semibold text-slate-700 text-sm" id="dispSchoolName">SD/SMP/SMA Negeri 1</span>
+                </div>
+                <div>
+                    <span class="text-slate-400 block uppercase tracking-wider text-[10px] font-semibold">Kelas / Sem / T.A.</span>
+                    <span class="font-semibold text-slate-700 text-sm"><span id="dispClass">7A</span> • <span id="dispSemester">Semester 1</span> (<span id="dispYear">2026/2027</span>)</span>
+                </div>
+                <div class="col-span-2 md:col-span-2">
+                    <span class="text-slate-400 block uppercase tracking-wider text-[10px] font-semibold">Tema / Kegiatan Kokurikuler</span>
+                    <span class="font-semibold text-indigo-700 text-sm truncate block" id="dispActivity">Gaya Hidup Berkelanjutan - Pengolahan Sampah Organik</span>
+                </div>
+            </div>
+            <button onclick="switchTab('tabSettings')" class="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium rounded-lg border border-slate-300 transition whitespace-nowrap">
+                <i class="fa-solid fa-pen-to-square"></i> Ubah Identitas
+            </button>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="flex border-b border-slate-200 mb-6 gap-2 no-print overflow-x-auto">
+            <button id="navBtn-tabStudents" onclick="switchTab('tabStudents')" class="tab-btn active border-b-2 border-indigo-600 text-indigo-600 font-semibold py-2.5 px-4 text-sm flex items-center gap-2 whitespace-nowrap">
+                <i class="fa-solid fa-users"></i> Daftar & Penilaian Siswa
+            </button>
+            <button id="navBtn-tabAddStudent" onclick="switchTab('tabAddStudent')" class="tab-btn text-slate-500 hover:text-indigo-600 font-medium py-2.5 px-4 text-sm flex items-center gap-2 whitespace-nowrap">
+                <i class="fa-solid fa-user-plus"></i> Kelola Data Siswa
+            </button>
+            <button id="navBtn-tabSummary" onclick="switchTab('tabSummary')" class="tab-btn text-slate-500 hover:text-indigo-600 font-medium py-2.5 px-4 text-sm flex items-center gap-2 whitespace-nowrap">
+                <i class="fa-solid fa-chart-pie"></i> Statistik & Rubrik
+            </button>
+            <button id="navBtn-tabExport" onclick="switchTab('tabExport')" class="tab-btn text-slate-500 hover:text-indigo-600 font-medium py-2.5 px-4 text-sm flex items-center gap-2 whitespace-nowrap">
+                <i class="fa-solid fa-file-export"></i> Ekspor Word & PDF
+            </button>
+            <button id="navBtn-tabSettings" onclick="switchTab('tabSettings')" class="tab-btn text-slate-500 hover:text-indigo-600 font-medium py-2.5 px-4 text-sm flex items-center gap-2 whitespace-nowrap">
+                <i class="fa-solid fa-gear"></i> Identitas Sekolah
+            </button>
+        </div>
+
+        <!-- TAB 1: DAFTAR & PENILAIAN SISWA -->
+        <div id="tabStudents" class="tab-content block">
+            <div class="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 mb-4 no-print">
+                <div class="relative flex-1">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                    <input type="text" id="searchInput" onkeyup="renderStudentTable()" placeholder="Cari nama, NIS, atau NISN siswa..." class="w-full pl-9 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div class="flex items-center gap-2">
+                    <select id="filterStatus" onchange="renderStudentTable()" class="border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="ALL">Semua Status Penilaian</option>
+                        <option value="DONE">Sudah Dinilai</option>
+                        <option value="PENDING">Belum Dinilai</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Student Table -->
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden no-print">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs sm:text-sm">
+                        <thead>
+                            <tr class="bg-slate-100 text-slate-600 font-semibold border-b border-slate-200">
+                                <th class="p-3 text-center w-12">No</th>
+                                <th class="p-3">Identitas Siswa</th>
+                                <th class="p-3 text-center">Kehadiran</th>
+                                <th class="p-3 text-center">Keaktifan</th>
+                                <th class="p-3 text-center">Kolaborasi</th>
+                                <th class="p-3 text-center">Kreativitas</th>
+                                <th class="p-3 text-center">Capaian Profil</th>
+                                <th class="p-3 text-center">Predikat Akhir</th>
+                                <th class="p-3 text-center w-28">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="studentTableBody" class="divide-y divide-slate-100">
+                            <!-- Table rows injected via JS -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="emptyStudentNotice" class="hidden p-8 text-center text-slate-400">
+                    <i class="fa-regular fa-folder-open text-4xl mb-2 text-slate-300"></i>
+                    <p class="text-sm font-medium">Belum ada data siswa.</p>
+                    <p class="text-xs text-slate-400 mt-1">Silakan tambahkan data siswa di menu "Kelola Data Siswa".</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: KELOLA DATA SISWA -->
+        <div id="tabAddStudent" class="tab-content hidden">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Add Single Form -->
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                    <h2 class="font-bold text-slate-800 text-base mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-user-plus text-indigo-600"></i> Tambah Siswa Baru
+                    </h2>
+                    <form id="addStudentForm" onsubmit="handleAddStudent(event)" class="space-y-4 text-xs">
+                        <div>
+                            <label class="block font-medium text-slate-700 mb-1">Nama Lengkap Siswa *</label>
+                            <input type="text" id="addName" required placeholder="Contoh: Ahmad Fauzi" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block font-medium text-slate-700 mb-1">NIS (Nomor Induk Siswa)</label>
+                            <input type="text" id="addNis" placeholder="Contoh: 2024001" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block font-medium text-slate-700 mb-1">NISN (Nasional)</label>
+                            <input type="text" id="addNisn" placeholder="Contoh: 0081234567" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 rounded-lg text-xs shadow transition flex justify-center items-center gap-2">
+                            <i class="fa-solid fa-plus"></i> Simpan Siswa
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Batch Import Form -->
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm md:col-span-2">
+                    <h2 class="font-bold text-slate-800 text-base mb-1 flex items-center gap-2">
+                        <i class="fa-solid fa-file-import text-indigo-600"></i> Import Banyak Siswa Sekaligus
+                    </h2>
+                    <p class="text-xs text-slate-500 mb-4">Salin dan tempel daftar nama siswa (satu nama per baris). Format opsional: <code class="bg-slate-100 px-1 rounded">Nama, NIS, NISN</code></p>
+                    
+                    <textarea id="batchInput" rows="7" placeholder="Contoh:
+Budi Santoso, 202401, 008111111
+Siti Rahma, 202402, 008222222
+Dewi Lestari" class="w-full p-3 border border-slate-300 rounded-lg text-xs font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500 mb-3"></textarea>
+                    
+                    <div class="flex justify-between items-center">
+                        <button onclick="handleBatchImport()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-4 py-2 rounded-lg text-xs shadow transition flex items-center gap-2">
+                            <i class="fa-solid fa-upload"></i> Proses Import Siswa
+                        </button>
+                        <button onclick="clearAllStudents()" class="text-rose-600 hover:text-rose-800 text-xs font-medium flex items-center gap-1">
+                            <i class="fa-solid fa-trash-can"></i> Hapus Semua Data Siswa
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 3: STATISTIK & RUBRIK -->
+        <div id="tabSummary" class="tab-content hidden">
+            <!-- Summary Counters -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm text-center">
+                    <span class="text-slate-400 text-xs font-semibold uppercase block">Total Siswa</span>
+                    <span class="text-2xl font-bold text-indigo-600" id="statTotal">0</span>
+                </div>
+                <div class="bg-white p-4 rounded-xl border border-emerald-200 shadow-sm text-center bg-emerald-50/30">
+                    <span class="text-emerald-600 text-xs font-semibold uppercase block">Sangat Berkembang (SB)</span>
+                    <span class="text-2xl font-bold text-emerald-700" id="statSb">0</span>
+                </div>
+                <div class="bg-white p-4 rounded-xl border border-blue-200 shadow-sm text-center bg-blue-50/30">
+                    <span class="text-blue-600 text-xs font-semibold uppercase block">Berkembang s. Harapan (BSH)</span>
+                    <span class="text-2xl font-bold text-blue-700" id="statBsh">0</span>
+                </div>
+                <div class="bg-white p-4 rounded-xl border border-amber-200 shadow-sm text-center bg-amber-50/30">
+                    <span class="text-amber-600 text-xs font-semibold uppercase block">Mulai / Belum Berkembang</span>
+                    <span class="text-2xl font-bold text-amber-700" id="statMbBb">0</span>
+                </div>
+            </div>
+
+            <!-- Rubric Reference -->
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                <h3 class="font-bold text-slate-800 text-base mb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-book-open text-indigo-600"></i> Standar Rubrik & Predikat Penilaian Kokurikuler
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                    <div class="p-3 bg-slate-50 rounded-lg border border-slate-200">
+                        <span class="inline-block px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold mb-1">SB / Sangat Baik</span>
+                        <p class="text-slate-600">Peserta didik secara konsisten melampaui indikator, dapat menjadi teladan, mandiri, dan aktif membimbing rekan setimnya.</p>
+                    </div>
+                    <div class="p-3 bg-slate-50 rounded-lg border border-slate-200">
+                        <span class="inline-block px-2 py-0.5 rounded bg-blue-100 text-blue-800 font-bold mb-1">BSH / Baik</span>
+                        <p class="text-slate-600">Peserta didik telah mencapai kriteria yang diharapkan secara konsisten dan mandiri tanpa perlu sering diingatkan.</p>
+                    </div>
+                    <div class="p-3 bg-slate-50 rounded-lg border border-slate-200">
+                        <span class="inline-block px-2 py-0.5 rounded bg-amber-100 text-amber-800 font-bold mb-1">MB / Cukup</span>
+                        <p class="text-slate-600">Peserta didik mulai menunjukkan kemampuan namun belum konsisten dan masih memerlukan dorongan atau ingatan sesekali.</p>
+                    </div>
+                    <div class="p-3 bg-slate-50 rounded-lg border border-slate-200">
+                        <span class="inline-block px-2 py-0.5 rounded bg-rose-100 text-rose-800 font-bold mb-1">BB / Kurang</span>
+                        <p class="text-slate-600">Peserta didik belum menunjukkan pencapaian indikator dan masih memerlukan bimbingan intensif serta pendampingan penuh.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 4: EKSPOR & LAPORAN -->
+        <div id="tabExport" class="tab-content hidden">
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm mb-6">
+                <h2 class="font-bold text-slate-800 text-base mb-2 flex items-center gap-2">
+                    <i class="fa-solid fa-download text-indigo-600"></i> Unduh Laporan Kokurikuler
+                </h2>
+                <p class="text-xs text-slate-500 mb-6">Pilih format dokumen dan jenis laporan yang ingin dicetak atau diunduh.</p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Export Class Summary -->
+                    <div class="p-4 border border-slate-200 rounded-xl bg-slate-50/50 hover:bg-slate-50 transition">
+                        <div class="flex items-center gap-3 mb-3">
+                            <div class="p-3 bg-indigo-100 text-indigo-700 rounded-lg">
+                                <i class="fa-solid fa-table-list text-xl"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-sm text-slate-800">Daftar Nilai Kolektif (Satu Kelas)</h3>
+                                <p class="text-xs text-slate-500">Rangkuman seluruh siswa dalam satu tabel lengkap.</p>
+                            </div>
+                        </div>
+                        <div class="flex flex-wrap gap-2 mt-4">
+                            <button onclick="exportClassDoc()" class="flex-1 min-w-[120px] bg-blue-600 hover:bg-blue-700 text-white py-2 px-3 rounded-lg text-xs font-medium transition flex items-center justify-center gap-1.5">
+                                <i class="fa-solid fa-file-word"></i> Unduh Word (.doc)
+                            </button>
+                            <button onclick="printClassPdf()" class="flex-1 min-w-[120px] bg-emerald-600 hover:bg-emerald-700 text-white py-2 px-3 rounded-lg text-xs font-medium transition flex items-center justify-center gap-1.5">
+                                <i class="fa-solid fa-file-pdf"></i> Unduh PDF / Cetak
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Export Individual Student Rapor -->
+                    <div class="p-4 border border-slate-200 rounded-xl bg-slate-50/50 hover:bg-slate-50 transition">
+                        <div class="flex items-center gap-3 mb-3">
+                            <div class="p-3 bg-indigo-100 text-indigo-700 rounded-lg">
+                                <i class="fa-solid fa-id-card text-xl"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-sm text-slate-800">Lembar Rapor Kokurikuler Siswa</h3>
+                                <p class="text-xs text-slate-500">Lembar penilaian individual dengan uraian narasi deskripsi.</p>
+                            </div>
+                        </div>
+                        <div class="space-y-3 mt-4">
+                            <select id="exportStudentSelect" class="w-full border border-slate-300 rounded-lg p-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                <option value="">-- Pilih Siswa --</option>
+                            </select>
+                            <div class="flex flex-wrap gap-2">
+                                <button onclick="exportSingleStudentDoc()" class="flex-1 min-w-[120px] bg-blue-600 hover:bg-blue-700 text-white py-2 px-3 rounded-lg text-xs font-medium transition flex items-center justify-center gap-1.5">
+                                    <i class="fa-solid fa-file-word"></i> Unduh Word (.doc)
+                                </button>
+                                <button onclick="printSingleStudentPdf()" class="flex-1 min-w-[120px] bg-emerald-600 hover:bg-emerald-700 text-white py-2 px-3 rounded-lg text-xs font-medium transition flex items-center justify-center gap-1.5">
+                                    <i class="fa-solid fa-file-pdf"></i> Unduh PDF / Cetak
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Preview Container for Printing/PDF -->
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm overflow-x-auto">
+                <div class="flex items-center justify-between mb-4 no-print">
+                    <h3 class="font-bold text-slate-700 text-sm">Pratinjau Laporan Dokumen</h3>
+                    <span class="text-xs text-slate-400">Pratinjau tampilan cetak</span>
+                </div>
+                
+                <div id="printArea" class="bg-white p-8 text-slate-900 border border-slate-300 min-w-[700px] text-xs">
+                    <!-- Dynamic Printable Content Generated Here -->
+                    <p class="text-center text-slate-400 italic">Pilih jenis ekspor di atas untuk menampilkan pratinjau.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 5: IDENTITAS SEKOLAH & KEGIATAN -->
+        <div id="tabSettings" class="tab-content hidden">
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm max-w-3xl mx-auto">
+                <h2 class="font-bold text-slate-800 text-base mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-school text-indigo-600"></i> Pengaturan Identitas Sekolah & Kegiatan Kokurikuler
+                </h2>
+                
+                <form id="settingsForm" onsubmit="handleSaveSettings(event)" class="space-y-4 text-xs">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block font-medium text-slate-700 mb-1">Nama Satuan Pendidikan *</label>
+                            <input type="text" id="cfgSchoolName" required class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block font-medium text-slate-700 mb-1">Kelas *</label>
+                            <input type="text" id="cfgClass" required class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block font-medium text-slate-700 mb-1">Semester *</label>
+                            <select id="cfgSemester" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white">
+                                <option value="Semester 1 (Ganjil)">Semester 1 (Ganjil)</option>
+                                <option value="Semester 2 (Genap)">Semester 2 (Genap)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block font-medium text-slate-700 mb-1">Tahun Pelajaran *</label>
+                            <input type="text" id="cfgYear" required class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                    </div>
+
+                    <div class="pt-2 border-t border-slate-100">
+                        <label class="block font-medium text-slate-700 mb-1">Tema / Nama Kegiatan Kokurikuler *</label>
+                        <input type="text" id="cfgActivity" required placeholder="Contoh: Gaya Hidup Berkelanjutan / Penguatan Profil Pelajar" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                        <p class="text-[11px] text-slate-400 mt-1">Dapat berupa nama proyek P5 atau nama kegiatan Lintas Disiplin Ilmu.</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate-100">
+                        <div>
+                            <label class="block font-medium text-slate-700 mb-1">Nama Guru Penilai / Koordinator</label>
+                            <input type="text" id="cfgTeacherName" placeholder="Contoh: Dra. Hariyanti, M.Pd." class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block font-medium text-slate-700 mb-1">NIP Guru Penilai</label>
+                            <input type="text" id="cfgTeacherNip" placeholder="Contoh: 19780512 200501 2 003" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                    </div>
+
+                    <div class="pt-4 flex justify-end">
+                        <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-5 py-2.5 rounded-lg text-xs shadow transition flex items-center gap-2">
+                            <i class="fa-solid fa-floppy-disk"></i> Simpan Identitas
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- MODAL PENILAIAN SISWA -->
+    <div id="assessModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 overflow-y-auto no-print">
+        <div class="bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-slate-200 overflow-hidden my-8">
+            <div class="bg-indigo-900 text-white px-6 py-4 flex justify-between items-center">
+                <div>
+                    <h3 class="font-bold text-base" id="modalStudentName">Form Penilaian Kokurikuler</h3>
+                    <p class="text-xs text-indigo-200" id="modalStudentSub">NIS: - | NISN: -</p>
+                </div>
+                <button onclick="closeAssessModal()" class="text-indigo-200 hover:text-white text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="p-6 space-y-5 max-h-[75vh] overflow-y-auto text-xs">
+                <input type="hidden" id="modalStudentId">
+
+                <!-- Aspect 1: Kehadiran -->
+                <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="font-semibold text-slate-800 flex items-center gap-1.5">
+                            <i class="fa-solid fa-clock text-indigo-600"></i> 1. Kehadiran dan Ketepatan Waktu
+                        </label>
+                        <span class="text-[10px] bg-slate-200 text-slate-700 font-semibold px-2 py-0.5 rounded" id="badge-a1">BSH</span>
+                    </div>
+                    <div class="grid grid-cols-4 gap-2 text-center">
+                        <label class="cursor-pointer border rounded-lg p-2 bg-white hover:border-indigo-400 transition has-[:checked]:border-indigo-600 has-[:checked]:bg-indigo-50">
+                            <input type="radio" name="asp_a1" value="BB" onchange="updateAspectBadge('a1', 'BB'); autoGenerateNarrative();" class="sr-only">
+                            <span class="block font-bold text-rose-600">BB</span>
+                            <span class="text-[10px] text-slate-500">Sering Terlambat</span>
+                        </label>
+                        <label class="cursor-pointer border rounded-lg p-2 bg-white hover:border-indigo-400 transition has-[:checked]:border-indigo-600 has-[:checked]:bg-indigo-50">
+                            <input type="radio" name="asp_a1" value="MB" onchange="updateAspectBadge('a1', 'MB'); autoGenerateNarrative();" class="sr-only">
+                            <span class="block font-bold text-amber-600">MB</span>
+                            <span class="text-[10px] text-slate-500">Cukup Tepat</span>
+                        </label>
+                        <label class="cursor-pointer border rounded-lg p-2 bg-white hover:border-indigo-400 transition has-[:checked]:border-indigo-600 has-[:checked]:bg-indigo-50">
+                            <input type="radio" name="asp_a1" value="BSH" checked onchange="updateAspectBadge('a1', 'BSH'); autoGenerateNarrative();" class="sr-only">
+                            <span class="block font-bold text-blue-600">BSH</span>
+                            <span class="text-[10px] text-slate-500">Tepat Waktu</span>
+                        </label>
+                        <label class="cursor-pointer border rounded-lg p-2 bg-white hover:border-indigo-400 transition has-[:checked]:border-indigo-600 has-[:checked]:bg-indigo-50">
+                            <input type="radio" name="asp_a1" value="SB" onchange="updateAspectBadge('a1', 'SB'); autoGenerateNarrative();" class="sr-only">
+                            <span class="block font-bold text-emerald-600">SB</span>
+                            <span class="text-[10px] text-slate-500">Sangat Disiplin</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Aspect 2: Partisipasi Aktif -->
+                <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="font-semibold text-slate-800 flex items-center gap-1.5">
+                            <i class="fa-solid fa-comments text-indigo-600"></i> 2. Partisipasi Aktif / Keaktifan
+                        </label>
+                        <span class="text-[10px] bg-slate-200 text-slate-700 font-semibold px-2 py-0.5 rounded" id="badge-a2">BSH</span>
+                    </div>
+                    <div class="grid grid-cols-4 gap-2 text-center">
+                        <label class="cursor-pointer border rounded-lg p-2 bg-white hover:border-indigo-400 transition has-[:checked]:border-indigo-600 has-[:checked]:bg-indigo-50">
+                            <input type="radio" name="asp_a2" value="BB" onchange="updateAspectBadge('a2', 'BB'); autoGenerateNarrative();" class="sr-only">
+                            <span class="block font-bold text-rose-600">BB</span>
+                            <span class="text-[10px] text-slate-500">Pasif</span>
+                        </label>
+                        <label class="cursor-pointer border rounded-lg p-2 bg-white hover:border-indigo-400 transition has-[:checked]:border-indigo-600 has-[:checked]:bg-indigo-50">
+                            <input type="radio" name="asp_a2" value="MB" onchange="updateAspectBadge('a2', 'MB'); autoGenerateNarrative();" class="sr-only">
+                            <span class="block font-bold text-amber-600">MB</span>
+                            <span class="text-[10px] text-slate-500">Kadang Aktif</span>
+                        </label>
+                        <label class="cursor-pointer border rounded-lg p-2 bg-white hover:border-indigo-400 transition has-[:checked]:border-indigo-600 has-[:checked]:bg-indigo-50">
+                            <input type="radio" name="asp_a2" value="BSH" checked onchange="updateAspectBadge('a2', 'BSH'); autoGenerateNarrative();" class="sr-only">
+                            <span class="block font-bold text-blue-600">BSH</span>
+                            <span class="text-[10px] text-slate-500">Aktif Terlibat</span>
+                        </label>
+                        <label class="cursor-pointer border rounded-lg p-2 bg-white hover:border-indigo-400 transition has-[:checked]:border-indigo-600 has-[:checked]:bg-indigo-50">
+                            <input type="radio" name="asp_a2" value="SB" onchange="updateAspectBadge('a2', 'SB'); autoGenerateNarrative();" class="sr-only">
+                            <span class="block font-bold text-emerald-600">SB</span>
+                            <span class="text-[10px] text-slate-500">Sangat Inisiatif</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Aspect 3: Kolaborasi -->
+                <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="font-semibold text-slate-800 flex items-center gap-1.5">
+                            <i class="fa-solid fa-handshake text-indigo-600"></i> 3. Kolaborasi atau Kerja Sama
+                        </label>
+                        <span class="text-[10px] bg-slate-200 text-slate-700 font-semibold px-2 py-0.5 rounded" id="badge-a3">BSH</span>
+                    </div>
+                    <div class="grid grid-cols-4 gap-2 text-center">
+                        <label class="cursor-pointer border rounded-lg p-2 bg-white hover:border-indigo-400 transition has-[:checked]:border-indigo-600 has-[:checked]:bg-indigo-50">
+                            <input type="radio" name="asp_a3" value="BB" onchange="updateAspectBadge('a3', 'BB'); autoGenerateNarrative();" class="sr-only">
+                            <span class="block font-bold text-rose-600">BB</span>
+                            <span class="text-[10px] text-slate-500">Sulit Bekerja Sama</span>
+                        </label>
+                        <label class="cursor-pointer border rounded-lg p-2 bg-white hover:border-indigo-400 transition has-[:checked]:border-indigo-600 has-[:checked]:bg-indigo-50">
+                            <input type="radio" name="asp_a3" value="MB" onchange="updateAspectBadge('a3', 'MB'); autoGenerateNarrative();" class="sr-only">
+                            <span class="block font-bold text-amber-600">MB</span>
+                            <span class="text-[10px] text-slate-500">Cukup Kooperatif</span>
+                        </label>
+                        <label class="cursor-pointer border rounded-lg p-2 bg-white hover:border-indigo-400 transition has-[:checked]:border-indigo-600 has-[:checked]:bg-indigo-50">
+                            <input type="radio" name="asp_a3" value="BSH" checked onchange="updateAspectBadge('a3', 'BSH'); autoGenerateNarrative();" class="sr-only">
+                            <span class="block font-bold text-blue-600">BSH</span>
+                            <span class="text-[10px] text-slate-500">Kerja Sama Baik</span>
+                        </label>
+                        <label class="cursor-pointer border rounded-lg p-2 bg-white hover:border-indigo-400 transition has-[:checked]:border-indigo-600 has-[:checked]:bg-indigo-50">
+                            <input type="radio" name="asp_a3" value="SB" onchange="updateAspectBadge('a3', 'SB'); autoGenerateNarrative();" class="sr-only">
+                            <span class="block font-bold text-emerald-600">SB</span>
+                            <span class="text-[10px] text-slate-500">Penggerak Tim</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Aspect 4: Kreativitas & Tanggung Jawab -->
+                <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="font-semibold text-slate-800 flex items-center gap-1.5">
+                            <i class="fa-solid fa-lightbulb text-indigo-600"></i> 4. Kreativitas dan Tanggung Jawab
+                        </label>
+                        <span class="text-[10px] bg-slate-200 text-slate-700 font-semibold px-2 py-0.5 rounded" id="badge-a4">BSH</span>
+                    </div>
+                    <div class="grid grid-cols-4 gap-2 text-center">
+                        <label class="cursor-pointer border rounded-lg p-2 bg-white hover:border-indigo-400 transition has-[:checked]:border-indigo-600 has-[:checked]:bg-indigo-50">
+                            <input type="radio" name="asp_a4" value="BB" onchange="updateAspectBadge('a4', 'BB'); autoGenerateNarrative();" class="sr-only">
+                            <span class="block font-bold text-rose-600">BB</span>
+                            <span class="text-[10px] text-slate-500">Kurang Tanggung Jawab</span>
+                        </label>
+                        <label class="cursor-pointer border rounded-lg p-2 bg-white hover:border-indigo-400 transition has-[:checked]:border-indigo-600 has-[:checked]:bg-indigo-50">
+                            <input type="radio" name="asp_a4" value="MB" onchange="updateAspectBadge('a4', 'MB'); autoGenerateNarrative();" class="sr-only">
+                            <span class="block font-bold text-amber-600">MB</span>
+                            <span class="text-[10px] text-slate-500">Mulai Kreatif</span>
+                        </label>
+                        <label class="cursor-pointer border rounded-lg p-2 bg-white hover:border-indigo-400 transition has-[:checked]:border-indigo-600 has-[:checked]:bg-indigo-50">
+                            <input type="radio" name="asp_a4" value="BSH" checked onchange="updateAspectBadge('a4', 'BSH'); autoGenerateNarrative();" class="sr-only">
+                            <span class="block font-bold text-blue-600">BSH</span>
+                            <span class="text-[10px] text-slate-500">Kreatif & Bertanggung Jawab</span>
+                        </label>
+                        <label class="cursor-pointer border rounded-lg p-2 bg-white hover:border-indigo-400 transition has-[:checked]:border-indigo-600 has-[:checked]:bg-indigo-50">
+                            <input type="radio" name="asp_a4" value="SB" onchange="updateAspectBadge('a4', 'SB'); autoGenerateNarrative();" class="sr-only">
+                            <span class="block font-bold text-emerald-600">SB</span>
+                            <span class="text-[10px] text-slate-500">Sangat Inovatif</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Aspect 5: Ketercapaian Dimensi Profil -->
+                <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="font-semibold text-slate-800 flex items-center gap-1.5">
+                            <i class="fa-solid fa-star text-indigo-600"></i> 5. Ketercapaian Dimensi Profil
+                        </label>
+                        <span class="text-[10px] bg-slate-200 text-slate-700 font-semibold px-2 py-0.5 rounded" id="badge-a5">BSH</span>
+                    </div>
+                    <div class="grid grid-cols-4 gap-2 text-center">
+                        <label class="cursor-pointer border rounded-lg p-2 bg-white hover:border-indigo-400 transition has-[:checked]:border-indigo-600 has-[:checked]:bg-indigo-50">
+                            <input type="radio" name="asp_a5" value="BB" onchange="updateAspectBadge('a5', 'BB'); autoGenerateNarrative();" class="sr-only">
+                            <span class="block font-bold text-rose-600">BB</span>
+                            <span class="text-[10px] text-slate-500">Belum Berkembang</span>
+                        </label>
+                        <label class="cursor-pointer border rounded-lg p-2 bg-white hover:border-indigo-400 transition has-[:checked]:border-indigo-600 has-[:checked]:bg-indigo-50">
+                            <input type="radio" name="asp_a5" value="MB" onchange="updateAspectBadge('a5', 'MB'); autoGenerateNarrative();" class="sr-only">
+                            <span class="block font-bold text-amber-600">MB</span>
+                            <span class="text-[10px] text-slate-500">Mulai Berkembang</span>
+                        </label>
+                        <label class="cursor-pointer border rounded-lg p-2 bg-white hover:border-indigo-400 transition has-[:checked]:border-indigo-600 has-[:checked]:bg-indigo-50">
+                            <input type="radio" name="asp_a5" value="BSH" checked onchange="updateAspectBadge('a5', 'BSH'); autoGenerateNarrative();" class="sr-only">
+                            <span class="block font-bold text-blue-600">BSH</span>
+                            <span class="text-[10px] text-slate-500">Berkembang Sesuai Harapan</span>
+                        </label>
+                        <label class="cursor-pointer border rounded-lg p-2 bg-white hover:border-indigo-400 transition has-[:checked]:border-indigo-600 has-[:checked]:bg-indigo-50">
+                            <input type="radio" name="asp_a5" value="SB" onchange="updateAspectBadge('a5', 'SB'); autoGenerateNarrative();" class="sr-only">
+                            <span class="block font-bold text-emerald-600">SB</span>
+                            <span class="text-[10px] text-slate-500">Sangat Berkembang</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Deskripsi Catatan Perkembangan -->
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="font-semibold text-slate-800 flex items-center gap-1.5">
+                            <i class="fa-solid fa-comment-dots text-indigo-600"></i> Deskripsi Catatan Perkembangan
+                        </label>
+                        <button type="button" onclick="autoGenerateNarrative(true)" class="text-[11px] text-indigo-600 hover:underline flex items-center gap-1">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> Regenerasi Otomatis
+                        </button>
+                    </div>
+                    <textarea id="modalNarrative" rows="3" placeholder="Catatan perkembangan siswa..." class="w-full p-2.5 border border-slate-300 rounded-lg text-xs leading-relaxed focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+                    <p class="text-[10px] text-slate-400 mt-1">Narasi dihasilkan secara otomatis berdasarkan indikator yang dipilih, namun guru dapat mengubah atau menambahkan catatan khusus secara bebas.</p>
+                </div>
+            </div>
+
+            <div class="bg-slate-50 px-6 py-3 border-t border-slate-200 flex justify-end gap-2">
+                <button onclick="closeAssessModal()" class="px-4 py-2 border border-slate-300 text-slate-600 hover:bg-slate-100 rounded-lg text-xs font-medium transition">
+                    Batal
+                </button>
+                <button onclick="saveStudentAssessment()" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold shadow transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-check"></i> Simpan Penilaian
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Footer -->
+    <footer class="bg-white border-t border-slate-200 py-4 mt-auto no-print">
+        <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-400">
+            Aplikasi Penilaian Kokurikuler & Profil Pelajar • Sesuai Standar Asesmen Kurikulum
+        </div>
+    </footer>
+
+
+    <!-- FIREBASE MODULE & APPLICATION JAVASCRIPT -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, signInWithCustomToken, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Firebase Configuration & Initialization
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'kokurikuler-app';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+            apiKey: "AIzaSyDemoConfigForSingleUserKokurikulerApp",
+            authDomain: "demo-kokurikuler.firebaseapp.com",
+            projectId: "demo-kokurikuler",
+            storageBucket: "demo-kokurikuler.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "1:123456789:web:abcdef"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // Application State
+        window.appState = {
+            user: null,
+            userId: null,
+            settings: {
+                schoolName: "SD Negeri 1 Merdeka",
+                className: "7A",
+                semester: "Semester 1 (Ganjil)",
+                year: "2026/2027",
+                activityName: "Gaya Hidup Berkelanjutan - Pengolahan Sampah Organik",
+                teacherName: "Ahmad Dahlan, S.Pd.",
+                teacherNip: "19850101 201001 1 005"
+            },
+            students: [
+                {
+                    id: "s1",
+                    name: "Andi Pratama",
+                    nis: "2026001",
+                    nisn: "0081234501",
+                    status: "DONE",
+                    scores: { a1: "SB", a2: "BSH", a3: "BSH", a4: "SB", a5: "SB" },
+                    narrative: "Ananda Andi Pratama sangat disiplin dalam kehadiran dan tanggung jawab tugas. Telah menunjukkan kreativitas serta pencapaian dimensi profil yang sangat berkembang secara mandiri."
+                },
+                {
+                    id: "s2",
+                    name: "Bina Nurhaliza",
+                    nis: "2026002",
+                    nisn: "0081234502",
+                    status: "DONE",
+                    scores: { a1: "BSH", a2: "BSH", a3: "SB", a4: "BSH", a5: "BSH" },
+                    narrative: "Ananda Bina Nurhaliza menunjukkan kemampuan kolaborasi dan kerja sama tim yang sangat menonjol. Mampu berkomunikasi dan saling mendukung dengan rekan kelompok."
+                },
+                {
+                    id: "s3",
+                    name: "Citra Kirana",
+                    nis: "2026003",
+                    nisn: "0081234503",
+                    status: "PENDING",
+                    scores: { a1: "BSH", a2: "BSH", a3: "BSH", a4: "BSH", a5: "BSH" },
+                    narrative: ""
+                }
+            ]
+        };
+
+        // Firebase Auth Init
+        async function initAuth() {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (err) {
+                console.warn("Auth initial fallback error:", err);
+            }
+        }
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                window.appState.user = user;
+                window.appState.userId = user.uid;
+                
+                // UI update auth status
+                document.getElementById('userInfo').classList.remove('hidden');
+                document.getElementById('userInfo').classList.add('flex');
+                document.getElementById('btnLogin').classList.add('hidden');
+                
+                document.getElementById('userName').textContent = user.displayName || user.email || 'Pengguna';
+                if (user.photoURL) {
+                    document.getElementById('userAvatar').src = user.photoURL;
+                }
+
+                // Sync data from Firestore
+                listenFirestoreData();
+            } else {
+                window.appState.user = null;
+                window.appState.userId = 'guest-' + crypto.randomUUID();
+                document.getElementById('userInfo').classList.add('hidden');
+                document.getElementById('btnLogin').classList.remove('hidden');
+            }
+        });
+
+        // Google Sign-In Function
+        document.getElementById('btnLogin').addEventListener('click', async () => {
+            const provider = new GoogleAuthProvider();
+            try {
+                await signInWithPopup(auth, provider);
+            } catch (error) {
+                console.error("Google Login Error:", error);
+                alert("Gagal masuk dengan Google: " + error.message);
+            }
+        });
+
+        document.getElementById('btnLogout').addEventListener('click', async () => {
+            await signOut(auth);
+            location.reload();
+        });
+
+        // Firestore Data Realtime Synchronization
+        function listenFirestoreData() {
+            if (!window.appState.userId) return;
+            
+            // Path: /artifacts/{appId}/users/{userId}/data/kokurikuler
+            const userDocRef = doc(db, 'artifacts', appId, 'users', window.appState.userId, 'data', 'kokurikuler');
+            
+            onSnapshot(userDocRef, (snapshot) => {
+                if (snapshot.exists()) {
+                    const data = snapshot.data();
+                    if (data.settings) window.appState.settings = data.settings;
+                    if (data.students) window.appState.students = data.students;
+                    updateUIFromState();
+                } else {
+                    // First time save initial seed data to firestore
+                    saveToFirestore();
+                }
+            }, (error) => {
+                console.error("Firestore sync error:", error);
+            });
+        }
+
+        window.saveToFirestore = async function() {
+            if (!window.appState.userId || !auth.currentUser) return;
+            const userDocRef = doc(db, 'artifacts', appId, 'users', window.appState.userId, 'data', 'kokurikuler');
+            try {
+                await setDoc(userDocRef, {
+                    settings: window.appState.settings,
+                    students: window.appState.students,
+                    updatedAt: new Date().toISOString()
+                });
+            } catch (err) {
+                console.error("Failed saving to firestore:", err);
+            }
+        };
+
+        // Run Auth
+        initAuth();
+    </script>
+
+    <!-- CORE INTERACTIVE UI CONTROLLER SCRIPT -->
+    <script>
+        // Tab Navigation Switcher
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => {
+                el.classList.add('hidden');
+                el.classList.remove('block');
+            });
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active', 'border-b-2', 'border-indigo-600', 'text-indigo-600', 'font-semibold');
+                btn.classList.add('text-slate-500', 'font-medium');
+            });
+
+            document.getElementById(tabId).classList.remove('hidden');
+            document.getElementById(tabId).classList.add('block');
+            
+            const activeBtn = document.getElementById('navBtn-' + tabId);
+            if (activeBtn) {
+                activeBtn.classList.add('active', 'border-b-2', 'border-indigo-600', 'text-indigo-600', 'font-semibold');
+                activeBtn.classList.remove('text-slate-500', 'font-medium');
+            }
+
+            if (tabId === 'tabExport') {
+                populateExportStudentSelect();
+            }
+        }
+
+        // Global State Helper Update
+        function updateUIFromState() {
+            const st = window.appState.settings;
+            document.getElementById('dispSchoolName').textContent = st.schoolName || '-';
+            document.getElementById('dispClass').textContent = st.className || '-';
+            document.getElementById('dispSemester').textContent = st.semester || '-';
+            document.getElementById('dispYear').textContent = st.year || '-';
+            document.getElementById('dispActivity').textContent = st.activityName || '-';
+            document.getElementById('headerActivitySub').textContent = st.activityName || 'Kokurikuler';
+
+            // Populate form settings
+            document.getElementById('cfgSchoolName').value = st.schoolName || '';
+            document.getElementById('cfgClass').value = st.className || '';
+            document.getElementById('cfgSemester').value = st.semester || 'Semester 1 (Ganjil)';
+            document.getElementById('cfgYear').value = st.year || '';
+            document.getElementById('cfgActivity').value = st.activityName || '';
+            document.getElementById('cfgTeacherName').value = st.teacherName || '';
+            document.getElementById('cfgTeacherNip').value = st.teacherNip || '';
+
+            renderStudentTable();
+            updateStatistics();
+        }
+
+        // Render Student Assessment Table
+        function renderStudentTable() {
+            const tbody = document.getElementById('studentTableBody');
+            const search = (document.getElementById('searchInput').value || '').toLowerCase();
+            const filter = document.getElementById('filterStatus').value;
+            const students = window.appState.students || [];
+
+            tbody.innerHTML = '';
+
+            const filtered = students.filter(s => {
+                const matchQuery = s.name.toLowerCase().includes(search) || (s.nis && s.nis.includes(search)) || (s.nisn && s.nisn.includes(search));
+                const matchStatus = filter === 'ALL' || (filter === 'DONE' && s.status === 'DONE') || (filter === 'PENDING' && s.status !== 'DONE');
+                return matchQuery && matchStatus;
+            });
+
+            if (filtered.length === 0) {
+                document.getElementById('emptyStudentNotice').classList.remove('hidden');
+            } else {
+                document.getElementById('emptyStudentNotice').classList.add('hidden');
+            }
+
+            filtered.forEach((st, idx) => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 border-b border-slate-100 transition";
+
+                const isDone = st.status === 'DONE';
+                const finalGrade = isDone ? calculateFinalPredikat(st.scores) : '-';
+
+                tr.innerHTML = `
+                    <td class="p-3 text-center text-slate-400 font-medium">${idx + 1}</td>
+                    <td class="p-3">
+                        <div class="font-semibold text-slate-800">${st.name}</div>
+                        <div class="text-[11px] text-slate-400">NIS: ${st.nis || '-'} | NISN: ${st.nisn || '-'}</div>
+                    </td>
+                    <td class="p-3 text-center">${renderBadge(st.scores?.a1, isDone)}</td>
+                    <td class="p-3 text-center">${renderBadge(st.scores?.a2, isDone)}</td>
+                    <td class="p-3 text-center">${renderBadge(st.scores?.a3, isDone)}</td>
+                    <td class="p-3 text-center">${renderBadge(st.scores?.a4, isDone)}</td>
+                    <td class="p-3 text-center">${renderBadge(st.scores?.a5, isDone)}</td>
+                    <td class="p-3 text-center font-bold">${renderFinalBadge(finalGrade, isDone)}</td>
+                    <td class="p-3 text-center">
+                        <div class="flex items-center justify-center gap-1">
+                            <button onclick="openAssessModal('${st.id}')" class="p-1.5 ${isDone ? 'bg-amber-100 text-amber-800 hover:bg-amber-200' : 'bg-indigo-600 text-white hover:bg-indigo-700'} rounded-md text-xs font-medium transition" title="${isDone ? 'Edit Penilaian' : 'Beri Nilai'}">
+                                <i class="fa-solid ${isDone ? 'fa-pen' : 'fa-list-check'}"></i>
+                            </button>
+                            <button onclick="deleteStudent('${st.id}')" class="p-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-md text-xs transition" title="Hapus Siswa">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderBadge(code, isDone) {
+            if (!isDone || !code) return `<span class="text-slate-300">-</span>`;
+            const map = {
+                'BB': 'bg-rose-100 text-rose-700 border-rose-200',
+                'MB': 'bg-amber-100 text-amber-700 border-amber-200',
+                'BSH': 'bg-blue-100 text-blue-700 border-blue-200',
+                'SB': 'bg-emerald-100 text-emerald-700 border-emerald-200'
+            };
+            return `<span class="px-2 py-0.5 rounded text-[11px] font-semibold border ${map[code] || 'bg-slate-100 text-slate-600'}">${code}</span>`;
+        }
+
+        function renderFinalBadge(grade, isDone) {
+            if (!isDone) return `<span class="text-xs text-slate-400 font-normal italic">Belum Dinilai</span>`;
+            const map = {
+                'SB': 'text-emerald-600',
+                'BSH': 'text-blue-600',
+                'MB': 'text-amber-600',
+                'BB': 'text-rose-600'
+            };
+            return `<span class="${map[grade] || 'text-slate-700'}">${grade}</span>`;
+        }
+
+        function calculateFinalPredikat(scores) {
+            if (!scores) return 'BSH';
+            const valMap = { 'BB': 1, 'MB': 2, 'BSH': 3, 'SB': 4 };
+            const vals = [
+                valMap[scores.a1 || 'BSH'],
+                valMap[scores.a2 || 'BSH'],
+                valMap[scores.a3 || 'BSH'],
+                valMap[scores.a4 || 'BSH'],
+                valMap[scores.a5 || 'BSH']
+            ];
+            const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
+            if (avg >= 3.5) return 'SB';
+            if (avg >= 2.5) return 'BSH';
+            if (avg >= 1.5) return 'MB';
+            return 'BB';
+        }
+
+        // Open Assessment Modal for Student
+        function openAssessModal(studentId) {
+            const student = window.appState.students.find(s => s.id === studentId);
+            if (!student) return;
+
+            document.getElementById('modalStudentId').value = student.id;
+            document.getElementById('modalStudentName').textContent = 'Penilaian: ' + student.name;
+            document.getElementById('modalStudentSub').textContent = `NIS: ${student.nis || '-'} | NISN: ${student.nisn || '-'}`;
+
+            const sc = student.scores || { a1: 'BSH', a2: 'BSH', a3: 'BSH', a4: 'BSH', a5: 'BSH' };
+            setRadioValue('asp_a1', sc.a1 || 'BSH');
+            setRadioValue('asp_a2', sc.a2 || 'BSH');
+            setRadioValue('asp_a3', sc.a3 || 'BSH');
+            setRadioValue('asp_a4', sc.a4 || 'BSH');
+            setRadioValue('asp_a5', sc.a5 || 'BSH');
+
+            updateAspectBadge('a1', sc.a1 || 'BSH');
+            updateAspectBadge('a2', sc.a2 || 'BSH');
+            updateAspectBadge('a3', sc.a3 || 'BSH');
+            updateAspectBadge('a4', sc.a4 || 'BSH');
+            updateAspectBadge('a5', sc.a5 || 'BSH');
+
+            document.getElementById('modalNarrative').value = student.narrative || '';
+            if (!student.narrative) {
+                autoGenerateNarrative(true);
+            }
+
+            document.getElementById('assessModal').classList.remove('hidden');
+        }
+
+        function closeAssessModal() {
+            document.getElementById('assessModal').classList.add('hidden');
+        }
+
+        function setRadioValue(name, val) {
+            const radios = document.getElementsByName(name);
+            radios.forEach(r => {
+                r.checked = (r.value === val);
+            });
+        }
+
+        function getRadioValue(name) {
+            const radios = document.getElementsByName(name);
+            for (let r of radios) {
+                if (r.checked) return r.value;
+            }
+            return 'BSH';
+        }
+
+        function updateAspectBadge(aspectKey, val) {
+            const el = document.getElementById('badge-' + aspectKey);
+            if (el) el.textContent = val;
+        }
+
+        // Auto Narrative Generator
+        function autoGenerateNarrative(force = false) {
+            const narrativeInput = document.getElementById('modalNarrative');
+            if (narrativeInput.value.trim() !== '' && !force) return;
+
+            const name = document.getElementById('modalStudentName').textContent.replace('Penilaian: ', '').trim();
+            const a1 = getRadioValue('asp_a1');
+            const a2 = getRadioValue('asp_a2');
+            const a3 = getRadioValue('asp_a3');
+            const a4 = getRadioValue('asp_a4');
+            const a5 = getRadioValue('asp_a5');
+
+            const scoreLabels = {
+                'SB': 'Sangat Berkembang',
+                'BSH': 'Berkembang Sesuai Harapan',
+                'MB': 'Mulai Berkembang',
+                'BB': 'Belum Berkembang'
+            };
+
+            let text = `Ananda ${name} `;
+
+            if (a1 === 'SB' && a4 === 'SB') {
+                text += `menunjukkan kedisiplinan dan kreativitas yang sangat luar biasa selama kegiatan kokurikuler. `;
+            } else if (a1 === 'SB' || a2 === 'SB' || a3 === 'SB' || a4 === 'SB' || a5 === 'SB') {
+                text += `telah menunjukkan keunggulan yang sangat baik pada beberapa aspek kegiatan. `;
+            } else {
+                text += `telah mengikuti seluruh rangkaian kegiatan kokurikuler dengan cermat. `;
+            }
+
+            // Highlighting Strengths
+            const strengths = [];
+            if (a1 === 'SB' || a1 === 'BSH') strengths.push('kehadiran & kedisiplinan waktu');
+            if (a2 === 'SB' || a2 === 'BSH') strengths.push('partisipasi aktif');
+            if (a3 === 'SB' || a3 === 'BSH') strengths.push('kolaborasi tim');
+            if (a4 === 'SB' || a4 === 'BSH') strengths.push('kreativitas & tanggung jawab');
+
+            if (strengths.length > 0) {
+                text += `Sangat menonjol dalam hal ${strengths.join(', ')}. `;
+            }
+
+            // Areas for Growth
+            const weaknesses = [];
+            if (a1 === 'MB' || a1 === 'BB') weaknesses.push('ketepatan waktu kehadiran');
+            if (a2 === 'MB' || a2 === 'BB') weaknesses.push('keaktifan berpendapat');
+            if (a3 === 'MB' || a3 === 'BB') weaknesses.push('kemampuan kerja sama');
+            if (a4 === 'MB' || a4 === 'BB') weaknesses.push('kreativitas serta kemandirian tugas');
+
+            if (weaknesses.length > 0) {
+                text += `Perlu ditingkatkan lagi dalam hal ${weaknesses.join(' dan ')} agar potensi diri makin optimal.`;
+            } else {
+                text += `Diharapkan dapat mempertahankan serta menginspirasi rekan-rekannya pada kegiatan mendatang.`;
+            }
+
+            narrativeInput.value = text;
+        }
+
+        // Save Assessment
+        function saveStudentAssessment() {
+            const studentId = document.getElementById('modalStudentId').value;
+            const student = window.appState.students.find(s => s.id === studentId);
+            if (!student) return;
+
+            student.scores = {
+                a1: getRadioValue('asp_a1'),
+                a2: getRadioValue('asp_a2'),
+                a3: getRadioValue('asp_a3'),
+                a4: getRadioValue('asp_a4'),
+                a5: getRadioValue('asp_a5')
+            };
+            student.narrative = document.getElementById('modalNarrative').value;
+            student.status = 'DONE';
+
+            closeAssessModal();
+            renderStudentTable();
+            updateStatistics();
+
+            if (window.saveToFirestore) window.saveToFirestore();
+        }
+
+        // Add Single Student
+        function handleAddStudent(e) {
+            e.preventDefault();
+            const name = document.getElementById('addName').value.trim();
+            const nis = document.getElementById('addNis').value.trim();
+            const nisn = document.getElementById('addNisn').value.trim();
+
+            if (!name) return;
+
+            const newStudent = {
+                id: 's-' + Date.now(),
+                name: name,
+                nis: nis,
+                nisn: nisn,
+                status: 'PENDING',
+                scores: { a1: 'BSH', a2: 'BSH', a3: 'BSH', a4: 'BSH', a5: 'BSH' },
+                narrative: ''
+            };
+
+            window.appState.students.push(newStudent);
+            document.getElementById('addStudentForm').reset();
+            
+            switchTab('tabStudents');
+            renderStudentTable();
+            updateStatistics();
+
+            if (window.saveToFirestore) window.saveToFirestore();
+        }
+
+        // Batch Import
+        function handleBatchImport() {
+            const raw = document.getElementById('batchInput').value.trim();
+            if (!raw) return;
+
+            const lines = raw.split('\n');
+            let addedCount = 0;
+
+            lines.forEach(line => {
+                if (!line.trim()) return;
+                const parts = line.split(',');
+                const name = parts[0]?.trim();
+                const nis = parts[1]?.trim() || '';
+                const nisn = parts[2]?.trim() || '';
+
+                if (name) {
+                    window.appState.students.push({
+                        id: 's-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
+                        name: name,
+                        nis: nis,
+                        nisn: nisn,
+                        status: 'PENDING',
+                        scores: { a1: 'BSH', a2: 'BSH', a3: 'BSH', a4: 'BSH', a5: 'BSH' },
+                        narrative: ''
+                    });
+                    addedCount++;
+                }
+            });
+
+            document.getElementById('batchInput').value = '';
+            alert(`Berhasil mengimpor ${addedCount} data siswa!`);
+            switchTab('tabStudents');
+            renderStudentTable();
+            updateStatistics();
+
+            if (window.saveToFirestore) window.saveToFirestore();
+        }
+
+        function deleteStudent(studentId) {
+            if (!confirm('Apakah Anda yakin ingin menghapus data siswa ini?')) return;
+            window.appState.students = window.appState.students.filter(s => s.id !== studentId);
+            renderStudentTable();
+            updateStatistics();
+            if (window.saveToFirestore) window.saveToFirestore();
+        }
+
+        function clearAllStudents() {
+            if (!confirm('PERINGATAN: Semua data siswa dalam kelas ini akan dihapus permanen! Lanjutkan?')) return;
+            window.appState.students = [];
+            renderStudentTable();
+            updateStatistics();
+            if (window.saveToFirestore) window.saveToFirestore();
+        }
+
+        // Save School Settings
+        function handleSaveSettings(e) {
+            e.preventDefault();
+            window.appState.settings = {
+                schoolName: document.getElementById('cfgSchoolName').value.trim(),
+                className: document.getElementById('cfgClass').value.trim(),
+                semester: document.getElementById('cfgSemester').value,
+                year: document.getElementById('cfgYear').value.trim(),
+                activityName: document.getElementById('cfgActivity').value.trim(),
+                teacherName: document.getElementById('cfgTeacherName').value.trim(),
+                teacherNip: document.getElementById('cfgTeacherNip').value.trim()
+            };
+
+            updateUIFromState();
+            alert('Identitas sekolah dan kegiatan berhasil diperbarui!');
+            switchTab('tabStudents');
+
+            if (window.saveToFirestore) window.saveToFirestore();
+        }
+
+        // Update Statistics Counters
+        function updateStatistics() {
+            const students = window.appState.students || [];
+            document.getElementById('statTotal').textContent = students.length;
+
+            let sb = 0, bsh = 0, mbBb = 0;
+            students.forEach(s => {
+                if (s.status === 'DONE') {
+                    const grade = calculateFinalPredikat(s.scores);
+                    if (grade === 'SB') sb++;
+                    else if (grade === 'BSH') bsh++;
+                    else mbBb++;
+                }
+            });
+
+            document.getElementById('statSb').textContent = sb;
+            document.getElementById('statBsh').textContent = bsh;
+            document.getElementById('statMbBb').textContent = mbBb;
+        }
+
+        // Populate Export Dropdown
+        function populateExportStudentSelect() {
+            const select = document.getElementById('exportStudentSelect');
+            select.innerHTML = '<option value="">-- Pilih Siswa --</option>';
+            window.appState.students.forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s.id;
+                opt.textContent = `${s.name} (NIS: ${s.nis || '-'})`;
+                select.appendChild(opt);
+            });
+        }
+
+        // Generate Print/PDF Table for Class
+        function generateClassReportHtml() {
+            const st = window.appState.settings;
+            const students = window.appState.students || [];
+
+            let rowsHtml = '';
+            students.forEach((s, idx) => {
+                const isDone = s.status === 'DONE';
+                const finalGrade = isDone ? calculateFinalPredikat(s.scores) : '-';
+                rowsHtml += `
+                    <tr style="border-bottom: 1px solid #e2e8f0;">
+                        <td style="padding: 8px; text-align: center;">${idx + 1}</td>
+                        <td style="padding: 8px;"><strong>${s.name}</strong><br><small style="color: #64748b;">NIS: ${s.nis || '-'} | NISN: ${s.nisn || '-'}</small></td>
+                        <td style="padding: 8px; text-align: center;">${s.scores?.a1 || '-'}</td>
+                        <td style="padding: 8px; text-align: center;">${s.scores?.a2 || '-'}</td>
+                        <td style="padding: 8px; text-align: center;">${s.scores?.a3 || '-'}</td>
+                        <td style="padding: 8px; text-align: center;">${s.scores?.a4 || '-'}</td>
+                        <td style="padding: 8px; text-align: center;">${s.scores?.a5 || '-'}</td>
+                        <td style="padding: 8px; text-align: center; font-weight: bold;">${finalGrade}</td>
+                    </tr>
+                `;
+            });
+
+            return `
+                <div style="font-family: Arial, sans-serif; color: #1e293b; padding: 10px;">
+                    <div style="text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 15px;">
+                        <h2 style="margin: 0; font-size: 18px; text-transform: uppercase;">DAFTAR NILAI KEKURIKULER SISWA</h2>
+                        <h3 style="margin: 5px 0 0 0; font-size: 14px; font-weight: normal;">${st.schoolName.toUpperCase()}</h3>
+                    </div>
+
+                    <table style="width: 100%; font-size: 12px; margin-bottom: 15px; border-collapse: collapse;">
+                        <tr>
+                            <td style="width: 15%; font-weight: bold;">Kelas</td><td style="width: 35%;">: ${st.className}</td>
+                            <td style="width: 20%; font-weight: bold;">Tahun Pelajaran</td><td style="width: 30%;">: ${st.year}</td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: bold;">Semester</td><td>: ${st.semester}</td>
+                            <td style="font-weight: bold;">Nama Kegiatan</td><td>: ${st.activityName}</td>
+                        </tr>
+                    </table>
+
+                    <table style="width: 100%; border-collapse: collapse; font-size: 11px; text-align: left;" border="1" bordercolor="#cbd5e1">
+                        <thead>
+                            <tr style="background-color: #f1f5f9; text-align: center;">
+                                <th style="padding: 8px; width: 30px;">No</th>
+                                <th style="padding: 8px;">Nama Lengkap Siswa</th>
+                                <th style="padding: 8px;">Kehadiran</th>
+                                <th style="padding: 8px;">Keaktifan</th>
+                                <th style="padding: 8px;">Kolaborasi</th>
+                                <th style="padding: 8px;">Kreativitas</th>
+                                <th style="padding: 8px;">Capaian Profil</th>
+                                <th style="padding: 8px;">Predikat</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rowsHtml}
+                        </tbody>
+                    </table>
+
+                    <div style="margin-top: 30px; display: flex; justify-content: space-between; font-size: 12px;">
+                        <div></div>
+                        <div style="text-align: center; width: 220px;">
+                            <p style="margin-bottom: 60px;">Guru Penilai / Koordinator,</p>
+                            <p style="font-weight: bold; text-decoration: underline; margin:0;">${st.teacherName || '................................'}</p>
+                            <p style="margin: 0;">NIP. ${st.teacherNip || '............................'}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Generate Single Student Rapor HTML
+        function generateSingleStudentReportHtml(studentId) {
+            const st = window.appState.settings;
+            const student = window.appState.students.find(s => s.id === studentId);
+            if (!student) return '<p class="text-rose-600">Siswa tidak ditemukan.</p>';
+
+            const sc = student.scores || { a1: '-', a2: '-', a3: '-', a4: '-', a5: '-' };
+            const finalGrade = calculateFinalPredikat(sc);
+
+            const scoreDesc = {
+                'SB': 'Sangat Berkembang (SB)',
+                'BSH': 'Berkembang Sesuai Harapan (BSH)',
+                'MB': 'Mulai Berkembang (MB)',
+                'BB': 'Belum Berkembang (BB)'
+            };
+
+            return `
+                <div style="font-family: Arial, sans-serif; color: #1e293b; padding: 10px;">
+                    <div style="text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 15px;">
+                        <h2 style="margin: 0; font-size: 16px; text-transform: uppercase;">LEMBAR PENILAIAN KOKURIKULER</h2>
+                        <h3 style="margin: 4px 0 0 0; font-size: 13px; font-weight: normal;">${st.schoolName.toUpperCase()}</h3>
+                    </div>
+
+                    <!-- Identitas Siswa -->
+                    <table style="width: 100%; font-size: 12px; margin-bottom: 15px; border-collapse: collapse; background-color: #f8fafc; padding: 8px;" border="0">
+                        <tr>
+                            <td style="padding: 4px; font-weight: bold; width: 20%;">Nama Siswa</td><td style="padding: 4px; width: 30%;">: ${student.name}</td>
+                            <td style="padding: 4px; font-weight: bold; width: 20%;">Kelas / Sem</td><td style="padding: 4px; width: 30%;">: ${st.className} / ${st.semester}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 4px; font-weight: bold;">NIS / NISN</td><td style="padding: 4px;">: ${student.nis || '-'} / ${student.nisn || '-'}</td>
+                            <td style="padding: 4px; font-weight: bold;">Tahun Pelajaran</td><td style="padding: 4px;">: ${st.year}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 4px; font-weight: bold;">Tema / Kegiatan</td><td style="padding: 4px;" colspan="3">: ${st.activityName}</td>
+                        </tr>
+                    </table>
+
+                    <!-- Aspek & Rubrik -->
+                    <h4 style="margin: 10px 0 5px 0; font-size: 13px;">A. Indikator & Capaian Aspek</h4>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 11px;" border="1" bordercolor="#cbd5e1">
+                        <thead>
+                            <tr style="background-color: #f1f5f9; text-align: left;">
+                                <th style="padding: 6px;">No</th>
+                                <th style="padding: 6px;">Aspek Penilaian Kokurikuler</th>
+                                <th style="padding: 6px; text-align: center;">Predikat Capaian</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td style="padding: 6px; text-align: center;">1</td><td style="padding: 6px;">Kehadiran dan Ketepatan Waktu</td><td style="padding: 6px; text-align: center; font-weight: bold;">${scoreDesc[sc.a1] || sc.a1}</td></tr>
+                            <tr><td style="padding: 6px; text-align: center;">2</td><td style="padding: 6px;">Partisipasi Aktif / Keaktifan</td><td style="padding: 6px; text-align: center; font-weight: bold;">${scoreDesc[sc.a2] || sc.a2}</td></tr>
+                            <tr><td style="padding: 6px; text-align: center;">3</td><td style="padding: 6px;">Kolaborasi atau Kerja Sama</td><td style="padding: 6px; text-align: center; font-weight: bold;">${scoreDesc[sc.a3] || sc.a3}</td></tr>
+                            <tr><td style="padding: 6px; text-align: center;">4</td><td style="padding: 6px;">Kreativitas dan Tanggung Jawab</td><td style="padding: 6px; text-align: center; font-weight: bold;">${scoreDesc[sc.a4] || sc.a4}</td></tr>
+                            <tr><td style="padding: 6px; text-align: center;">5</td><td style="padding: 6px;">Ketercapaian Dimensi Profil Pelajar</td><td style="padding: 6px; text-align: center; font-weight: bold;">${scoreDesc[sc.a5] || sc.a5}</td></tr>
+                            <tr style="background-color: #f8fafc; font-weight: bold;">
+                                <td style="padding: 6px; text-align: center;" colspan="2">PENCAPAIAN PREDIKAT KESELURUHAN</td>
+                                <td style="padding: 6px; text-align: center; font-size: 12px; color: #1e3a8a;">${scoreDesc[finalGrade] || finalGrade}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <!-- Deskripsi Narasi -->
+                    <h4 style="margin: 15px 0 5px 0; font-size: 13px;">B. Catatan Deskripsi Perkembangan Peserta Didik</h4>
+                    <div style="border: 1px solid #cbd5e1; padding: 10px; border-radius: 4px; font-size: 11px; line-height: 1.6; background-color: #fafafa; min-height: 60px;">
+                        ${student.narrative || 'Belum ada catatan deskripsi.'}
+                    </div>
+
+                    <!-- Tanda Tangan -->
+                    <div style="margin-top: 25px; display: flex; justify-content: space-between; font-size: 11px;">
+                        <div style="text-align: center; width: 200px;">
+                            <p style="margin-bottom: 50px;">Mengetahui,<br>Orang Tua / Wali Murid</p>
+                            <p style="font-weight: bold; text-decoration: underline; margin:0;">( ......................................... )</p>
+                        </div>
+                        <div style="text-align: center; width: 200px;">
+                            <p style="margin-bottom: 50px;">Guru Penilai / Koordinator,</p>
+                            <p style="font-weight: bold; text-decoration: underline; margin:0;">${st.teacherName || '................................'}</p>
+                            <p style="margin: 0;">NIP. ${st.teacherNip || '............................'}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Action Export Functions
+        function exportClassDoc() {
+            const htmlContent = generateClassReportHtml();
+            document.getElementById('printArea').innerHTML = htmlContent;
+
+            const blob = new Blob(['\ufeff' + htmlContent], {
+                type: 'application/msword'
+            });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Daftar_Nilai_Kokurikuler_${window.appState.settings.className.replace(/\s+/g, '_')}.doc`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function printClassPdf() {
+            const htmlContent = generateClassReportHtml();
+            const printArea = document.getElementById('printArea');
+            printArea.innerHTML = htmlContent;
+
+            const opt = {
+                margin:       10,
+                filename:     `Daftar_Nilai_Kokurikuler_${window.appState.settings.className.replace(/\s+/g, '_')}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2 },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
+            };
+            html2pdf().set(opt).from(printArea).save();
+        }
+
+        function exportSingleStudentDoc() {
+            const studentId = document.getElementById('exportStudentSelect').value;
+            if (!studentId) {
+                alert('Pilih siswa terlebih dahulu!');
+                return;
+            }
+            const htmlContent = generateSingleStudentReportHtml(studentId);
+            document.getElementById('printArea').innerHTML = htmlContent;
+
+            const student = window.appState.students.find(s => s.id === studentId);
+            const blob = new Blob(['\ufeff' + htmlContent], {
+                type: 'application/msword'
+            });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Rapor_Kokurikuler_${student.name.replace(/\s+/g, '_')}.doc`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function printSingleStudentPdf() {
+            const studentId = document.getElementById('exportStudentSelect').value;
+            if (!studentId) {
+                alert('Pilih siswa terlebih dahulu!');
+                return;
+            }
+            const htmlContent = generateSingleStudentReportHtml(studentId);
+            const printArea = document.getElementById('printArea');
+            printArea.innerHTML = htmlContent;
+
+            const student = window.appState.students.find(s => s.id === studentId);
+            const opt = {
+                margin:       10,
+                filename:     `Rapor_Kokurikuler_${student.name.replace(/\s+/g, '_')}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2 },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+            html2pdf().set(opt).from(printArea).save();
+        }
+
+        // On Page Ready Init
+        window.addEventListener('DOMContentLoaded', () => {
+            updateUIFromState();
+        });
+    </script>
+</body>
+</html>
